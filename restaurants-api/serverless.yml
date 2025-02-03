@@ -1,0 +1,21 @@
+service: restaurants-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: eu-west-1
+
+functions:
+  get-all-restaurants:
+    handler: dist/index.handler
+    events:
+      - http:
+          path: restaurants
+          method: get
+
+plugins:
+  - serverless-webpack
+
+build:
+  esbuild: false

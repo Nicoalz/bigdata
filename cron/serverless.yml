@@ -1,0 +1,19 @@
+service: cron-getter-reviews
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: eu-west-1
+
+functions:
+  get-analyze-reviews:
+    handler: dist/index.handler
+    events:
+      - schedule: rate(1 hour)
+
+plugins:
+  - serverless-webpack
+
+build:
+  esbuild: false
