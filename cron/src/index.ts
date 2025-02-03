@@ -3,116 +3,131 @@ import { Handler } from 'aws-lambda';
 import { HfInference } from "@huggingface/inference";
 // import { DynamoDB } from 'aws-sdk';
 import * as puppeteer from 'puppeteer';
+import { get } from 'http';
 // import { v4 as uuidv4 } from 'uuid';
 
 console.log('Loading function');
 
-// const client = new HfInference(process.env.HUGGING_FACE_ACCESS_TOKEN);
+const client = new HfInference(process.env.HUGGING_FACE_ACCESS_TOKEN);
 
-// type Sentiment = "positive" | "neutral" | "negative";
+type Sentiment = "positive" | "neutral" | "negative";
 
-// const getSentiment = async (text: string) : Promise<Sentiment> => {
-//     const output = await client.textClassification({
-//         model: "cardiffnlp/twitter-xlm-roberta-base-sentiment",
-//         inputs: text,
-//         provider: "hf-inference",
-//     });
+const getSentiment = async (text: string) : Promise<Sentiment> => {
+    const output = await client.textClassification({
+        model: "cardiffnlp/twitter-xlm-roberta-base-sentiment",
+        inputs: text,
+        provider: "hf-inference",
+    });
 
-//     const sentiment = output[0].label as Sentiment;
-//     return sentiment;
+    const sentiment = output[0].label as Sentiment;
+    return sentiment;
 
-// }
+}
 
 async function scrapeReviews(url: string) {
-  const browser = await puppeteer.launch({headless: false});
+  const browser = await puppeteer.launch({headless: true});
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   
-  let reviews: { rating: number; comment: string }[] = [];
+  let reviews: string[] = [];
   
   try {
-      while (true) {
-          await page.waitForSelector('.y-css-1wfz87z', { timeout: 10000 });
-          const reviewElements = await page.$$('.y-css-1wfz87z');
-          
-          for (const element of reviewElements) {
-              let rating = 0;
-              let comment = '';
-              
-              // try {
-              //     const ratingElement = await element.$('.y-css-dnttlc');
-              //     console.log('ratingElement:', ratingElement);
-              //     if (ratingElement) {
-              //         const ratingText = await page.evaluate(el => el.getAttribute('aria-label'), ratingElement);
-              //         rating = ratingText ? parseInt(ratingText.split(' ')[0]) : 0;
-              //     }
-              // } catch (error) {
-              //     rating = 0;
-              // }
-              
-              try {
-
-                  // get ul element of class 'list__09f24__ynIEd'
-                  // const ulElement = await element.$('ul.list__09f24__ynIEd');
-                  // console.log('ulElement:', ulElement);
-
-                  // const commentElement = await element.$('span.raw__09f24__T4Ezm');
-                  // if (commentElement) {
-                  //     comment = await page.evaluate(el => el.textContent?.trim() || '', commentElement);
-                  // }
-              } catch (error) {
-                  comment = '';
-              }
-              console.log('rating:', rating);
-              console.log('comment:', comment);
-              reviews.push({ rating, comment });
-          }
-          
-          // const nextButton = await page.$('.next-link');
-          // if (nextButton) {
-          //     await nextButton.click();
-          //     await page.waitfo
-          // } else {
-          //     break;
-          // }
-          // break
-      }
-  } catch (error) {
-      console.error(`Error while scraping: ${error}`);
-  }
+    while (true) {
+        await page.waitForSelector('.y-css-1wfz87z', { timeout: 5000 });
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        const reviewElements = await page.$$('.y-css-1wfz87z');
+        
+        for (const element of reviewElements) {
+            let comment = '';
+            
+            try {
+                const commentElement = await element.$('span.raw__09f24__T4Ezm');
+                if (commentElement) {
+                    comment = await page.evaluate(el => el.textContent?.trim() || '', commentElement);
+                }
+            } catch (error) {
+                comment = '';
+            }
+            
+            reviews.push(comment);
+        }
+        
+        // const nextButton = await page.$('.next-link');
+        // if (nextButton) {
+        //     await nextButton.click();
+        //     // await page.waitForTimeout(3000); // Wait for the page to reload
+        //     await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
+        // } else {
+        //     break;
+        // }
+        // stop
+        break;
+    }
+} catch (error) {
+    console.error(`Error while scraping: ${error}`);
+}
   
   await browser.close();
-  return reviews;
+  return reviews.filter(review => review.length > 0);
+
 }
 
 
-
-// export const handler: Handler = async () => {
-  const usage = async () => {
-    console.log('Usage: node index.js <url>');
-  const restaurants = [{id: "1", url: "https://www.yelp.fr/biz/le-ruisseau-burger-joint-paris"}];
-
+const getReviews = async (restaurants: {id: string, url: string}[]) => {
+  const all_reviews: {restaurant_id: string, comment: string}[] = [];
   for (const restaurant of restaurants) {
+    try {
     console.log('Scraping reviews for restaurant:', restaurant.id);
-    const restaurantId = restaurant.id;
     const url = restaurant.url;
     if (!url) continue;
 
     const reviews = await scrapeReviews(url);
-    // const formattedReviews = reviews.map(review => ({
-    //     id: uuidv4(),
-    //     restaurant_id: restaurantId,
-    //     rating: review.rating,
-    //     comment: review.comment,
-    // }));
+    all_reviews.push(...reviews.map(comment => ({restaurant_id: restaurant.id, comment})));
+    } catch (error) {
+    console.error(`Error while scraping reviews for restaurant ${restaurant.id}: ${error}`);
+    
+    }
+    return all_reviews;
+}
+}
 
-    // await insertReviews(formattedReviews);
-    // allReviews = [...allReviews, ...formattedReviews];
+const addSentiments = async (reviews: {restaurant_id: string, comment: string}[]) => {
+  const reviews_with_sentiment = await Promise.all(reviews.map(async review => {
+    try {
+    const sentiment = await getSentiment(review.comment);
+    return {...review, sentiment};
+    } catch (error) {
+    console.error(`Error while getting sentiment for review ${review.comment}: ${error}`);
+    return {...review, sentiment: 'neutral'};
+    }
+  }));
+  return reviews_with_sentiment;
 }
 
 
-  return { statusCode: 200 };
-};
+// export const handler: Handler = async () => {
+  const usage = async () => {
+
+    // get restaurants:
+    const restaurants = [{id: "1", url: "https://www.yelp.fr/biz/le-ruisseau-burger-joint-paris"}];
+
+    const reviews = await getReviews(restaurants);
+
+    if (!reviews) {
+        console.log('No reviews found');
+        return;
+    }
+
+    const reviews_with_sentiment = await addSentiments(reviews);
+
+    // add to db
+
+
+  }
+
+
+//   return { statusCode: 200 };
+// };
 
 
 usage()
