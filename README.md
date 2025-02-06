@@ -95,6 +95,9 @@ This will start the service using `serverless-offline` for local development.
 - **Path**: `worldcloud-api/`
 - **Description**: Returns a wordcloud PDF of reviews for a specific restaurant.
 - **Deployment**: Uses `serverless-webpack` for bundling.
+- Issues with the PDF generation on AWS Lambda, so the service is not fully functional.
+Here is a locally generated PDF example of the restaurant with id 2:
+![wordcloud](/worldcloud-api/wordscloud-restaurant-3.png)
 
 ## Environment Variables
 
