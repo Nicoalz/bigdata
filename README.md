@@ -3,14 +3,14 @@
 ## AUBERT Thomas, AVERSANO Lorenzo, BORDEAUX Nicolas
 
 ### API route to get restaurants list:
-```https://3ty7kejy1c.execute-api.eu-west-1.amazonaws.com/dev/restaurants```
+[https://3ty7kejy1c.execute-api.eu-west-1.amazonaws.com/dev/restaurants](https://3ty7kejy1c.execute-api.eu-west-1.amazonaws.com/dev/restaurants)
 
 ### API route to get reviews of a restaurant (by restaurant_id):
-```https://znc7ce7l7i.execute-api.eu-west-1.amazonaws.com/dev/reviews/2```
+[https://znc7ce7l7i.execute-api.eu-west-1.amazonaws.com/dev/reviews/2](https://znc7ce7l7i.execute-api.eu-west-1.amazonaws.com/dev/reviews/2)
 
 
 ### API route to get wordcloud of reviews of a restaurant (by restaurant_id):
-```https://6z1vyts8hl.execute-api.eu-west-1.amazonaws.com/dev/worldcloud/2```
+[https://6z1vyts8hl.execute-api.eu-west-1.amazonaws.com/dev/worldcloud/2](https://6z1vyts8hl.execute-api.eu-west-1.amazonaws.com/dev/worldcloud/2)
 
 # Lambda API Project
 
