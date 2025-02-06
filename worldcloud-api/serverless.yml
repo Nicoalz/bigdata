@@ -1,0 +1,27 @@
+service: worldcloud-api
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: dev
+  region: eu-west-1
+  environment:
+    FONTCONFIG_PATH: /opt/etc/fonts
+
+functions:
+  get-worldcloud-of-restaurant:
+    handler: dist/index.handler
+    events:
+      - http:
+          path: worldcloud/{restaurantId}
+          method: get
+    layers:
+      - arn:aws:lambda:eu-west-1:711387134662:layer:canvas-nodejs:1
+      - arn:aws:lambda:eu-west-1:711387134662:layer:fonts-layer:1 
+
+
+plugins:
+  - serverless-webpack
+
+build:
+  esbuild: false

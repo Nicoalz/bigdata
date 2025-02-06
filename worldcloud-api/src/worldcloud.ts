@@ -1,12 +1,13 @@
-// src/index.ts
-import { JSDOM } from 'jsdom';
 import { createCanvas, Canvas, CanvasRenderingContext2D as NodeCanvasRenderingContext2D } from 'canvas';
 import cloud from 'd3-cloud';
 import PDFDocument from 'pdfkit';
-import fs from 'fs';
-import { words } from './data';
 import { CloudOptions, WordItem } from './types';
 import { Word } from 'd3-cloud';
+
+import { registerFont } from 'canvas';
+
+registerFont('/opt/etc/fonts/Helvetica.ttf', { family: 'Helvetica' });
+
 
 declare module 'canvas' {
     interface Canvas {
@@ -21,7 +22,7 @@ type CustomCanvasContext = NodeCanvasRenderingContext2D & {
     filter?: string;
 };
 
-class WordCloudGenerator {
+export class WordCloudGenerator {
   private canvas: Canvas;
   private ctx: CustomCanvasContext;
   private options: CloudOptions;
@@ -44,7 +45,7 @@ class WordCloudGenerator {
           width: 1200,
           height: 800,
           padding: 3,
-          font: 'Arial',
+          font: 'Helvetica',
           colors: ['#2B3674', '#475099', '#6369BE', '#7F82E2']
       };
   }
@@ -124,7 +125,7 @@ class WordCloudGenerator {
       }));
   }
 
-  async generateWordCloud(): Promise<Buffer> {
+  async generateWordCloud(words:WordItem[]): Promise<Buffer> {
     return new Promise((resolve, reject) => {
         try {
             this.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -135,7 +136,7 @@ class WordCloudGenerator {
                 .padding(this.options.padding)
                 .rotate(() => 0)
                 .spiral('rectangular')
-                .font(this.options.font)
+                .font('Helvetica')
                 .fontSize(d => d.size || 0)
                 .canvas(() => this.canvas as unknown as HTMLCanvasElement)
                 .on('end', (words: Word[]) => {
@@ -173,33 +174,54 @@ class WordCloudGenerator {
     });
 }
 
-  async createPDF(imageBuffer: Buffer): Promise<void> {
-      const doc = new PDFDocument({
-          size: [this.options.width, this.options.height]
-      });
+//   async createPDF(imageBuffer: Buffer): Promise<void> {
+//       const doc = new PDFDocument({
+//           size: [this.options.width, this.options.height]
+//       });
 
-      const outputPath = './word-cloud.pdf';
-      doc.pipe(fs.createWriteStream(outputPath));
+//       const outputPath = './word-cloud.pdf';
+//       doc.pipe(fs.createWriteStream(outputPath));
 
-      doc.image(imageBuffer, 0, 0, {
-          width: this.options.width,
-          height: this.options.height
-      });
+//       doc.image(imageBuffer, 0, 0, {
+//           width: this.options.width,
+//           height: this.options.height
+//       });
 
-      doc.end();
-      console.log(`PDF created successfully: ${outputPath}`);
-  }
+//       doc.end();
+//       console.log(`PDF created successfully: ${outputPath}`);
+//   }
 
-  async generate(): Promise<void> {
-      try {
-          const imageBuffer = await this.generateWordCloud();
-          await this.createPDF(imageBuffer);
-      } catch (error) {
-          console.error('Error during generation:', error);
-          throw error;
-      }
-  }
+async createPDF(imageBuffer: Buffer): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({
+            size: [this.options.width, this.options.height]
+        });
+
+        const chunks: Buffer[] = [];
+        doc.on('data', chunk => chunks.push(chunk)); // Collect chunks in memory
+        doc.on('end', () => resolve(Buffer.concat(chunks))); // Resolve with final buffer
+        doc.on('error', reject);
+
+        doc.font('Helvetica') // Register the font
+
+        doc.image(imageBuffer, 0, 0, {
+            width: this.options.width,
+            height: this.options.height
+        });
+
+        doc.end();
+    });
 }
 
-const generator = new WordCloudGenerator();
-generator.generate().catch(console.error);
+
+async generatePDF(words: WordItem[]): Promise<Buffer> {
+    try {
+        const imageBuffer = await this.generateWordCloud(words);
+        return await this.createPDF(imageBuffer);
+    } catch (error) {
+        console.error('Error during generation:', error);
+        throw error;
+    }
+}
+
+}
