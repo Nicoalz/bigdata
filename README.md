@@ -102,3 +102,15 @@ Here is a locally generated PDF example of the restaurant with id 2:
 ## Environment Variables
 
 Each service may require specific environment variables. Refer to the `serverless.yml` file in each service directory for details.
+
+## Quicksight Dashboard
+
+Issues creating the dashboard. ✅
+Used AWS Glue to create a crawler and a database to store the data of the DynamoDB tables (reviews and restaurants). ✅
+Used Athena to query the data and create a dataset. ✅
+Used QuickSight to create the dashboard but data not showing up. 
+
+Screenshot of the QuickSight dashboard:
+![quicksight-1](/screenshots//quicksight-1.png)
+![quicksight-2](/screenshots//quicksight-2.png)
+![quicksight-3](/screenshots//quicksight-3.png)
