@@ -105,9 +105,12 @@ Each service may require specific environment variables. Refer to the `serverles
 
 ## Quicksight Dashboard
 
-Issues creating the dashboard. ✅
+Issues creating the dashboard.
+
 Used AWS Glue to create a crawler and a database to store the data of the DynamoDB tables (reviews and restaurants). ✅
+
 Used Athena to query the data and create a dataset. ✅
+
 Used QuickSight to create the dashboard but data not showing up. 
 
 Screenshot of the QuickSight dashboard:
